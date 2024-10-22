@@ -6,8 +6,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 
 # Load the datasets with semicolon delimiter
-combined_df = pd.read_csv("C:/Users/FPT SHOP/Documents/Zalo Received Files/combined_data3.csv", delimiter=";")
-hunonic_df = pd.read_csv("C:/Users/FPT SHOP/Documents/Zalo Received Files/hunonic8.csv", delimiter=";")
+combined_df = pd.read_csv("combined_data3.csv", delimiter=";")
+hunonic_df = pd.read_csv("hunonic8.csv", delimiter=";")
 
 # Set up custom CSS for the app
 st.markdown(
