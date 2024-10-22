@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
 
 # Load the datasets with semicolon delimiter
 combined_df = pd.read_csv("combined_data3.csv", delimiter=";")
@@ -109,25 +107,3 @@ if dataset_option == "Hiển thị Data tổng hợp":
 elif dataset_option == "Hiển thị Hunonic Data":
     st.write("Dữ liệu Hunonic:")
     st.dataframe(hunonic_df)
-
-# Tiền xử lý dữ liệu cho mô hình dự đoán
-def preprocess_data(df):
-    df['Giá gốc'] = pd.to_numeric(df['Giá gốc'], errors='coerce')
-    df['Giá hiện tại'] = pd.to_numeric(df['Giá hiện tại'], errors='coerce')
-    df = df.dropna()  # Loại bỏ các giá trị thiếu
-    return df
-
-# Huấn luyện mô hình Linear Regression
-combined_df = preprocess_data(combined_df)
-X = combined_df[['Giá gốc']]
-y = combined_df['Giá hiện tại']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-model = LinearRegression()
-model.fit(X_train, y_train)
-
-# Thêm chức năng dự đoán vào cuối
-st.write("### Dự đoán giá hiện tại dựa trên giá gốc")
-gia_goc_input = st.number_input("Nhập giá gốc:")
-if st.button("Dự đoán giá hiện tại"):
-    gia_du_doan = model.predict([[gia_goc_input]])[0]
-    st.write(f"Giá hiện tại dự đoán: {gia_du_doan:.2f} VNĐ")
