@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
 
 # Load the datasets with semicolon delimiter
 combined_df = pd.read_csv("combined_data3.csv", delimiter=";")
@@ -67,39 +67,21 @@ dataset_option = st.sidebar.selectbox("Chọn dataset", ["Hiển thị Data tổ
 
 # Function to compare and highlight differences
 def highlight_price_difference(combined, hunonic):
-    # Merge data on 'Tên sản phẩm'
     merged_df = pd.merge(combined, hunonic, on='Tên sản phẩm', suffixes=('_combined', '_hunoic'))
-
-    # Apply condition to highlight rows where combined current price is less than hunoic price
-    def highlight(row):
-        return ['background-color: lightgreen' if row['Giá hiện tại_combined'] < row['Giá hiện tại_hunoic'] else '' for _ in row]
-
-    # Sort the highlighted rows first
-    sorted_df = merged_df.sort_values(by=['Giá hiện tại_combined'], ascending=True)
-    
-    # Create a dataframe of only the filtered rows
     filtered_df = merged_df[merged_df['Giá hiện tại_combined'] < merged_df['Giá hiện tại_hunoic']]
-    
-    # Return both the styled dataframe and the filtered dataframe
-    return sorted_df.style.apply(highlight, axis=1), filtered_df
+    return filtered_df
 
 # Show dataset based on selection
 if dataset_option == "Hiển thị Data tổng hợp":
     st.write("Dữ liệu Tổng hợp:")
     st.dataframe(combined_df)
 
-    # Add comparison button
     if st.button("So sánh với Hunonic"):
-        # Perform the comparison and get both the highlighted and filtered dataframes
-        highlighted_df, filtered_df = highlight_price_difference(combined_df, hunonic_df)
+        filtered_df = highlight_price_difference(combined_df, hunonic_df)
         
-        st.write("Dữ liệu sau khi so sánh:")
-        st.dataframe(highlighted_df)  # Display the highlighted dataframe
-
-        st.write("Các sản phẩm có giá thị trường tổng hợp thấp hơn Hunonic:")  # Display the filtered dataframe below
+        st.write("Các sản phẩm có giá thị trường tổng hợp thấp hơn Hunonic:")
         st.dataframe(filtered_df)
 
-        # Optionally: You can provide a download button for the filtered dataframe
         csv = filtered_df.to_csv(index=False)
         st.download_button(
             label="Tải xuống CSV",
@@ -108,44 +90,33 @@ if dataset_option == "Hiển thị Data tổng hợp":
             mime='text/csv',
         )
 
-        # Create visualizations with Plotly
+        # Tạo biểu đồ so sánh giá giữa Thị trường và Hunonic bằng Matplotlib
         st.write("### Biểu đồ so sánh giá giữa Thị trường và Hunonic")
-        
-        # Bar Chart for current prices
         bar_chart_df = pd.merge(combined_df, hunonic_df, on='Tên sản phẩm', suffixes=('_thitruong', '_hunonic'))
-        fig_bar = px.bar(bar_chart_df, 
-                         x="Tên sản phẩm", 
-                         y=["Giá hiện tại_thitruong", "Giá hiện tại_hunonic"], 
-                         title="So sánh giá hiện tại",
-                         labels={"value": "Giá hiện tại", "variable": "Dataset"})
-        st.plotly_chart(fig_bar)
 
-        # Scatter Plot for price comparison
-        scatter_df = pd.merge(combined_df, hunonic_df, on='Tên sản phẩm', suffixes=('_thitruong', '_hunonic'))
-        fig_scatter = px.scatter(scatter_df, 
-                                 x="Giá hiện tại_thitruong", 
-                                 y="Giá hiện tại_hunonic", 
-                                 color="Tên sản phẩm",
-                                 title="Phân phối giá Thị Trường vs Hunonic",
-                                 labels={"Giá hiện tại_thitruong": "Giá Thị Trường", "Giá hiện tại_hunonic": "Giá Hunonic"})
-        st.plotly_chart(fig_scatter)
+        # Bar chart
+        fig, ax = plt.subplots(figsize=(10, 6))
+        bar_width = 0.35
+        index = range(len(bar_chart_df))
+        ax.bar(index, bar_chart_df['Giá hiện tại_thitruong'], bar_width, label='Giá Thị Trường', color='red')
+        ax.bar([i + bar_width for i in index], bar_chart_df['Giá hiện tại_hunonic'], bar_width, label='Giá Hunonic', color='blue')
         
-        # Box Plot for price distribution with custom colors
-        fig_box = px.box(bar_chart_df, 
-                 y=["Giá hiện tại_thitruong", "Giá hiện tại_hunonic"], 
-                 title="Box plot phân phối giá giữa Thị trường và Hunonic",
-                 labels={"value": "Giá hiện tại", "variable": "Loại giá"},
-                 color_discrete_map={"Giá hiện tại_thitruong": "red", "Giá hiện tại_hunonic": "blue"})  # Use red and blue for contrast
-        st.plotly_chart(fig_box)
+        ax.set_xlabel('Tên sản phẩm')
+        ax.set_ylabel('Giá hiện tại')
+        ax.set_title('So sánh giá hiện tại giữa Thị trường và Hunonic')
+        ax.set_xticks([i + bar_width / 2 for i in index])
+        ax.set_xticklabels(bar_chart_df['Tên sản phẩm'], rotation=90)
+        ax.legend()
 
-        # Histogram for price frequency distribution with custom colors
-        fig_hist = px.histogram(bar_chart_df, 
-                        x=["Giá hiện tại_thitruong", "Giá hiện tại_hunonic"], 
-                        title="Histogram tần suất giá Thị Trường và Hunonic",
-                        labels={"value": "Giá hiện tại", "variable": "Loại giá"},
-                        barmode='overlay',  # Overlay both histograms to compare easily
-                        color_discrete_map={"Giá hiện tại_thitruong": "red", "Giá hiện tại_hunonic": "blue"})  # Red for Thị Trường, blue for Hunonic
-        st.plotly_chart(fig_hist)
+        st.pyplot(fig)
+
+        # Box plot
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.boxplot(data=[bar_chart_df['Giá hiện tại_thitruong'], bar_chart_df['Giá hiện tại_hunonic']], ax=ax)
+        ax.set_xticklabels(['Giá Thị Trường', 'Giá Hunonic'])
+        ax.set_ylabel('Giá hiện tại')
+        ax.set_title('Phân phối giá giữa Thị trường và Hunonic')
+        st.pyplot(fig)
 
 elif dataset_option == "Hiển thị Hunonic Data":
     st.write("Dữ liệu Hunonic:")
